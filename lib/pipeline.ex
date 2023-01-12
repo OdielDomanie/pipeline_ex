@@ -138,4 +138,62 @@ defmodule Pipeline do
       end
     end
   end
+
+  @doc """
+  Executes multiple expressions in parallel and returns the results.
+
+  Internally, spawns tasks for each corresponding line and awaits them.
+
+  ## Examples
+      split {1, 10} do
+        {val, _} -> val * 2
+        {_, val} -> val * 2
+      end
+      #=> {2, 20}
+  """
+  defmacro split(expr, do: do_block) do
+    split_gen(expr, do: do_block)
+  end
+
+  @doc """
+  Executes multiple expressions in parallel and returns the results, with timeout.
+
+  The `split/2` macro has a default timeout of `5_000`.
+  Use this macro to set a timeout in the format used in `Task` module.
+
+  Example usage:
+
+      split {1, 10}, timeout: 500 do
+        <expressions...>
+      end
+  """
+  defmacro split(expr, [timeout: timeout], do: do_block)
+           when is_integer(timeout) or timeout == :infinity do
+    split_gen(expr, timeout: timeout, do: do_block)
+  end
+
+  defp split_gen(expr, opts_n_do) do
+    timeout = Keyword.get(opts_n_do, :timeout, 5000)
+    do_block = Keyword.fetch!(opts_n_do, :do)
+
+    matched_exprs =
+      for line <- do_block do
+        quote do
+          case unquote(expr) do
+            unquote([line])
+          end
+        end
+      end
+
+    task_exprs =
+      for line <- matched_exprs do
+        quote do
+          Task.async(fn -> unquote(line) end)
+        end
+      end
+
+    quote do
+      [unquote_splicing(task_exprs)] |> Task.await_many(unquote(timeout))
+    end
+  end
 end

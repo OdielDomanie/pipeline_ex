@@ -65,4 +65,29 @@ defmodule PipelineTest do
 
     assert res == 2
   end
+
+  test "split/2" do
+    res =
+      {1, 10}
+      |> split do
+        {val, _} -> val * 2
+        {_, val} -> val * 2
+      end
+
+    assert res == [2, 20]
+  end
+
+  test "split/3" do
+    res =
+      split {1, 10}, timeout: 6_000 do
+        {val, _} ->
+          Process.sleep(5_500)
+          val * 2
+
+        {_, val} ->
+          val * 2
+      end
+
+    assert res == [2, 20]
+  end
 end
