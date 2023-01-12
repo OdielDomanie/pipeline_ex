@@ -53,6 +53,17 @@ defmodule PipelineTest do
       ~>> fun.(&1, &3, &1, &4, :r, &2)
 
     assert res == [1, [4, :w], 1, :q, :r, 2]
+
+    fun = fn a, b, c -> [a, b, c] end
+
+    res =
+      1
+      |> merge do
+        &2 <- 2
+      end
+      ~>> fun.(3, &2, &1)
+
+    assert res == [3, 2, 1]
   end
 
   test "switch/2" do

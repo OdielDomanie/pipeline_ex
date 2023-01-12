@@ -29,7 +29,11 @@ defmodule Pipeline do
         merge1(do_block, fun)
 
       {:merge, md, [arg1, [do: do_block]]} ->
-        {:__block__, do_md, vals} = do_block
+        {do_md, vals} =
+          case do_block do
+            {:__block__, do_md, vals} -> {do_md, vals}
+            {:<-, line_md, val} -> {line_md, [{:<-, line_md, val}]}
+          end
 
         {:__block__, do_md, [{:<-, md, [{:&, do_md, [1]}, arg1]} | vals]}
         |> merge1(fun)
@@ -93,7 +97,11 @@ defmodule Pipeline do
   end
 
   defp merge_fun(do_block) do
-    {:__block__, _md, lines} = do_block
+    lines =
+      case do_block do
+        {:__block__, _md, lines} -> lines
+        line -> [line]
+      end
 
     for {:<-, _md, [left, right]} <- lines do
       {:&, _md, [at_no]} = left
