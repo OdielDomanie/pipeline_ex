@@ -281,4 +281,19 @@ defmodule Pipeline do
        end).()
     end
   end
+
+  @doc """
+  Assigns the piped in value to given variable name.
+
+  ## Examples
+      6 |> div(2) |> assign(a) |> div(3)
+      #=> 1
+      a
+      #=> 3
+  """
+  defmacro assign(expr, var) do
+    quote do
+      var!(unquote(var)) = unquote(expr)
+    end
+  end
 end

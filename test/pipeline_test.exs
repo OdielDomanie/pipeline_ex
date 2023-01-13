@@ -149,4 +149,15 @@ defmodule PipelineTest do
 
     assert result == {:error, 2, 4}
   end
+
+  test "~> into =" do
+    _ =
+      30
+      |> div(2)
+      |> div(5)
+      |> assign(a)
+      |> div(3)
+
+    assert a == 3
+  end
 end
