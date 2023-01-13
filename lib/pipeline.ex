@@ -153,34 +153,34 @@ defmodule Pipeline do
   Internally, spawns tasks for each corresponding line and awaits them.
 
   ## Examples
-      split {1, 10} do
+      parallel {1, 10} do
         {val, _} -> val * 2
         {_, val} -> val * 2
       end
       #=> {2, 20}
   """
-  defmacro split(expr, do: do_block) do
-    split_gen(expr, do: do_block)
+  defmacro parallel(expr, do: do_block) do
+    parallel_gen(expr, do: do_block)
   end
 
   @doc """
   Executes multiple expressions in parallel and returns the results, with timeout.
 
-  The `split/2` macro has a default timeout of `5_000`.
+  The `parallel/2` macro has a default timeout of `5_000`.
   Use this macro to set a timeout in the format used in `Task` module.
 
   Example usage:
 
-      split {1, 10}, timeout: 500 do
+      parallel {1, 10}, timeout: 500 do
         <expressions...>
       end
   """
-  defmacro split(expr, [timeout: timeout], do: do_block)
+  defmacro parallel(expr, [timeout: timeout], do: do_block)
            when is_integer(timeout) or timeout == :infinity do
-    split_gen(expr, timeout: timeout, do: do_block)
+    parallel_gen(expr, timeout: timeout, do: do_block)
   end
 
-  defp split_gen(expr, opts_n_do) do
+  defp parallel_gen(expr, opts_n_do) do
     timeout = Keyword.get(opts_n_do, :timeout, 5000)
     do_block = Keyword.fetch!(opts_n_do, :do)
 
@@ -204,4 +204,37 @@ defmodule Pipeline do
       [unquote_splicing(task_exprs)] |> Task.await_many(unquote(timeout))
     end
   end
+
+  @doc """
+  Pipes the expression into multiple branches, returns the results in a tuple.
+
+  This is similar to `parallel/2`, but the branches are executes sequentially.
+
+  ## Examples
+      {1, 10}
+      |> split do
+        {val, _} -> val * 2
+        {_, val} -> val * 2
+      end
+      #=> {2, 20}
+  """
+  defmacro split(expr, do: do_block) do
+    anon_funs =
+      for line <- do_block do
+        quote do
+          fn ->
+            case unquote(expr) do
+              unquote([line])
+            end
+          end
+        end
+      end
+
+    quote do
+      [unquote_splicing(anon_funs)]
+      |> Enum.map(fn branch -> branch.() end)
+      |> List.to_tuple()
+    end
+  end
+
 end
