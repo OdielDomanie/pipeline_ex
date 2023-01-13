@@ -113,4 +113,40 @@ defmodule PipelineTest do
 
     assert res == {2, 20}
   end
+
+  test "only/3" do
+    fun = fn {:ok, val} -> {:ok, val + 2} end
+
+    result =
+      {:ok, 6}
+      |> fun.()
+      |> only(:ok, do: div(2))
+
+    assert result == 4
+
+    result =
+      {:error, 2, 4}
+      |> only :ok do
+        Enum.map(&div(&1, 2))
+      end
+
+    assert result == {:error, 2, 4}
+  end
+
+  test ">>>/2" do
+    fun = fn val -> {:ok, val + 2} end
+
+    result =
+      {:ok, 6} >>>
+        fun.() >>>
+        div(2)
+
+    assert result == 4
+
+    result =
+      {:error, 2, 4} >>>
+        div(2)
+
+    assert result == {:error, 2, 4}
+  end
 end

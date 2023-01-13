@@ -237,4 +237,48 @@ defmodule Pipeline do
     end
   end
 
+  @doc """
+  Only runs input if the given atom matches the first element.
+
+  If the input expression returns a two element tuple and
+  `ok :: atom()` matches the first element,
+  the expression given to `do:` is returned,
+  otherwise the input expression is returned as is.
+
+  ## Examples
+
+      {:ok, 6}
+      |> only(:ok, do: div(2))
+      #=> 3
+
+      {:error, 2, 4}
+      |> only(:ok, do: div(2))
+      #=> {:error, 2, 4}
+  """
+  defmacro only(expr, ok, do: do_block) when is_atom(ok) do
+    quote do
+      (fn ->
+         case unquote(expr) do
+           {unquote(ok), only_val} -> only_val |> unquote(do_block)
+           only_fail -> only_fail
+         end
+       end).()
+    end
+  end
+
+  @doc """
+  Pipe in if the first element is :ok, otherwise return input.
+
+  `>>> expr` is equivalent to `|> only :ok, do: expr`
+  """
+  defmacro left >>> right do
+    quote do
+      (fn ->
+         case unquote(left) do
+           {:ok, only_val} -> only_val |> unquote(right)
+           only_fail -> only_fail
+         end
+       end).()
+    end
+  end
 end
