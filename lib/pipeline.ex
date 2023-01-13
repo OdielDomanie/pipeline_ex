@@ -257,12 +257,10 @@ defmodule Pipeline do
   """
   defmacro only(expr, ok, do: do_block) when is_atom(ok) do
     quote do
-      (fn ->
-         case unquote(expr) do
-           {unquote(ok), only_val} -> only_val |> unquote(do_block)
-           only_fail -> only_fail
-         end
-       end).()
+      case unquote(expr) do
+        {unquote(ok), only_val} -> only_val |> unquote(do_block)
+        only_fail -> only_fail
+      end
     end
   end
 
@@ -273,12 +271,10 @@ defmodule Pipeline do
   """
   defmacro left >>> right do
     quote do
-      (fn ->
-         case unquote(left) do
-           {:ok, only_val} -> only_val |> unquote(right)
-           only_fail -> only_fail
-         end
-       end).()
+      case unquote(left) do
+        {:ok, only_val} -> only_val |> unquote(right)
+        only_fail -> only_fail
+      end
     end
   end
 
