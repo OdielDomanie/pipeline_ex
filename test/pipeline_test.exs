@@ -4,7 +4,7 @@ defmodule PipelineTest do
 
   import Pipeline
 
-  test "pipe into ith position" do
+  test "~>/2" do
     fun = fn a, b, c -> [a, b, c] end
 
     res =
